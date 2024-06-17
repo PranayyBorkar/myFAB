@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: rgb(146, 248, 146);
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        button:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+
+        button:hover:enabled {
+            background-color: rgb(62, 241, 62);
+        }
+
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <button id="generateButton" onclick="generateResults()">Generate Result</button>
+    <button id="submitButton" onclick="submitResults()" disabled>Submit</button>
+    <h1>Generate Result of Each Minute Between 8 AM to 8 PM</h1>
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>Index No.</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Rows will be inserted here by JavaScript -->
+        </tbody>
+    </table>
+    <script>
+        const imageSources = [
+            'Last5Data/0-0.jpg','Last5Data/0-1.jpg','Last5Data/0-2.jpg','Last5Data/0-3.jpg','Last5Data/0-4.jpg','Last5Data/0-5.jpg','Last5Data/0-6.jpg',
+            'Last5Data/0-7.jpg','Last5Data/0-8.jpg','Last5Data/0-9.jpg','Last5Data/0-10.jpg','Last5Data/0-11.jpg','Last5Data/0-12.jpg','Last5Data/1-0.jpg',
+            'Last5Data/1-1.jpg','Last5Data/1-2.jpg','Last5Data/1-3.jpg','Last5Data/1-4.jpg','Last5Data/1-5.jpg','Last5Data/1-6.jpg','Last5Data/1-7.jpg',
+            'Last5Data/1-8.jpg','Last5Data/1-9.jpg','Last5Data/1-10.jpg','Last5Data/1-11.jpg','Last5Data/1-12.jpg','Last5Data/2-0.jpg','Last5Data/2-1.jpg','Last5Data/2-2.jpg',
+            'Last5Data/2-3.jpg','Last5Data/2-4.jpg','Last5Data/2-5.jpg','Last5Data/2-6.jpg','Last5Data/2-7.jpg','Last5Data/2-8.jpg','Last5Data/2-9.jpg',
+            'Last5Data/2-10.jpg','Last5Data/2-11.jpg','Last5Data/2-12.jpg','Last5Data/3-0.jpg','Last5Data/3-1.jpg','Last5Data/3-2.jpg','Last5Data/3-3.jpg','Last5Data/3-4.jpg','Last5Data/3-5.jpg',
+            'Last5Data/3-6.jpg', 'Last5Data/3-7.jpg','Last5Data/3-8.jpg','Last5Data/3-9.jpg','Last5Data/3-10.jpg',
+            'Last5Data/3-11.jpg', 'Last5Data/3-12.jpg',
+        ];
+
+        let resultsGenerated = false; // Flag to track if results have been generated
+
+        // Function to convert time format from "08:00 AM" to "08:00:00"
+        function convertTimeFormat(timeString) {
+            const [time, modifier] = timeString.split(' ');
+            let [hours, minutes] = time.split(':');
+            
+            // Convert hours to 24-hour format
+            hours = parseInt(hours, 10);
+            if (modifier === 'PM' && hours !== 12) {
+                hours += 12;
+            }
+            if (modifier === 'AM' && hours === 12) {
+                hours = 0;
+            }
+
+            return `${String(hours).padStart(2, '0')}:${minutes}:00`;
+        }
+
+        // Function to get current date and time in IST and format them
+        function getISTDateTime() {
+            var now = new Date();
+            var istOffset = 5.5 * 60 * 60 * 1000; // IST offset in milliseconds
+            var istDate = new Date(now.getTime() + istOffset);
+
+            var record_date = istDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            var tck_time = istDate.toISOString().split('T')[1].split('.')[0]; // Format as HH:MM:SS
+
+            return { record_date, tck_time };
+        }
+
+        function loadResults() {
+            const today = new Date().toISOString().split('T')[0];
+            const storedResults = localStorage.getItem('generatedResults-' + today);
+            if (storedResults) {
+                const results = JSON.parse(storedResults);
+                displayResults(results);
+                resultsGenerated = true;
+                document.getElementById('submitButton').disabled = localStorage.getItem('submittedResults-' + today) === 'true';
+            }
+        }
+
+        function displayResults(results) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            results.forEach(result => {
+                const row = tbody.insertRow();
+                const cellIndex = row.insertCell(0);
+                const cellDate = row.insertCell(1);
+                const cellTime = row.insertCell(2);
+                const cellResult = row.insertCell(3);
+
+                cellIndex.innerHTML = result.index;
+                cellDate.innerHTML = result.date;
+                cellTime.innerHTML = result.time;
+                cellResult.innerHTML = result.result;
+            });
+        }
+
+        function generateResults() {
+            if (resultsGenerated) {
+                alert("Results have already been generated.");
+                return;
+            }
+
+            const generateButton = document.getElementById('generateButton');
+            generateButton.disabled = true; // Disable the button after one click
+
+            const now = new Date();
+            const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+            const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0);
+            let index = 1;
+
+            // Array to store results
+            const results = [];
+
+            for (let time = new Date(startTime); time <= endTime; time.setMinutes(time.getMinutes() + 1)) {
+                const randomImage = imageSources[Math.floor(Math.random() * imageSources.length)];
+                const formattedTime = convertTimeFormat(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }));
+
+                results.push({
+                    index: index++,
+                    date: time.toISOString().split('T')[0], // Format date as YYYY-MM-DD
+                    time: formattedTime, // Convert time format
+                    result: randomImage
+                });
+
+                // Check if the current time is past the end time, then break the loop
+                if (time.getHours() === endTime.getHours() && time.getMinutes() === endTime.getMinutes()) {
+                    break;
+                }
+            }
+
+            // Store results in local storage with today's date as part of the key
+            const today = now.toISOString().split('T')[0]; // Format date as YYYY-MM-DD
+            localStorage.setItem('generatedResults-' + today, JSON.stringify(results));
+
+            // Display results in the table
+            displayResults(results);
+
+            resultsGenerated = true; // Set flag to true
+            document.getElementById('submitButton').disabled = false; // Enable the submit button
+        }
+
+        async function submitResults() {
+            const today = new Date().toISOString().split('T')[0]; // Format date as YYYY-MM-DD
+            const results = JSON.parse(localStorage.getItem('generatedResults-' + today));
+            console.log(results);
+
+            try {
+                for (const result of results) {
+                    const response = await fetch('http://localhost:8080/Resultdetails', {
+                        //const response = await fetch('http://116.202.33.18:8080/Resultdetails', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(result)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                }
+                alert('All results submitted successfully.');
+                localStorage.setItem('submittedResults-' + today, 'true');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while submitting the results.');
+            }
+
+            // Disable the submit button to prevent multiple submissions
+            document.getElementById('submitButton').disabled = true;
+        }
+
+        // Load results from local storage on page load
+        window.onload = loadResults;
+    </script>
+</body>
+</html>
